@@ -166,11 +166,13 @@ def get_minimum_lines(matrix, row_selection):
 			unselected_rows.append(i)
 	return [unselected_rows, selected_columns]
 
-def sublist_empty(parent_list):
+def sublists_empty(parent_list):
 	for sub_list in parent_list:
 		if len(sub_list) > 0:
-			return True
-	return False
+			return False
+	return True
+
+FINAL_ASSIGNMENTS = []
 
 def main():
 	subjects = get_subjects()
@@ -191,14 +193,14 @@ def main():
 	while teachers_available(teachers) and subjects_unassigned(subjects):
 		teachers_in_use = []
 		subjects_in_use = []
-		for i, teacher in enumerate(teachers):
+		for row, teacher in enumerate(teachers):
 			if teacher[1] > 0:
-				teachers_in_use.append(i)
-				teachers[i][1] -= 1
-		for i, subject in enumerate(subjects):
+				teachers_in_use.append(row)
+				teachers[row][1] -= 1
+		for row, subject in enumerate(subjects):
 			if subject[1] > 0:
-				subjects_in_use.append(i)
-				subjects[i][1] -= 1
+				subjects_in_use.append(row)
+				subjects[row][1] -= 1
 		extra_zeros = len(teachers_in_use) - len(subjects_in_use)
 		matrix = []
 		for teacher_index in teachers_in_use:
@@ -212,6 +214,9 @@ def main():
 			extra_zeros = extra_zeros * -1
 			for x in range(extra_zeros):
 				matrix.append([0] * len(subjects_in_use))
+
+		assignments = [-1] * len(matrix)
+
 		optimal_solution_found = False
 		while not optimal_solution_found:
 			matrix = reduce_matrix(matrix)
@@ -222,42 +227,42 @@ def main():
 				while scan_updated:
 					scan_updated = False
 					extra_row_scan = row_scan_remaining_rows(matrix, column_scan_result, row_scan_result)
-					for i, row in enumerate(extra_row_scan):
+					for row, row in enumerate(extra_row_scan):
 						if row != -1:
 							scan_updated = True
-							row_scan_result[i] = row
+							row_scan_result[row] = row
 					extra_column_scan = column_scan_remaining_columns(matrix, row_scan_result, column_scan_result)
-					for i, column in enumerate(extra_column_scan):
+					for row, column in enumerate(extra_column_scan):
 						if column != -1:
 							scan_updated = True
-							column_scan_result[i] = column
+							column_scan_result[row] = column
 
 			if row_scan_result.count(-1) + column_scan_result.count(-1) != len(matrix):
 				row_assignment = row_scan_result.copy()
-				for i, value in enumerate(column_scan_result):
+				for row, value in enumerate(column_scan_result):
 					if value != -1:
-						row_assignment[value] = i
+						row_assignment[value] = row
 				minimum_lines = get_minimum_lines(matrix, row_assignment)
 				if len(minimum_lines[0]) + len(minimum_lines[1]) != len(matrix):
 					safe_rows = []
 					safe_columns = []
-					for i in range(len(matrix)):
-						if i not in minimum_lines[0]:
-							safe_rows.append(i)
-						if i not in minimum_lines[1]:
-							safe_columns.append(i)
+					for row in range(len(matrix)):
+						if row not in minimum_lines[0]:
+							safe_rows.append(row)
+						if row not in minimum_lines[1]:
+							safe_columns.append(row)
 					minimum = matrix[safe_rows[0]][safe_columns[0]]
-					for i in safe_rows:
+					for row in safe_rows:
 						for j in safe_columns:
-							if matrix[i][j] < minimum:
-								minimum = matrix[i][j]
+							if matrix[row][j] < minimum:
+								minimum = matrix[row][j]
 
-					for i in range(len(matrix)):
+					for row in range(len(matrix)):
 						for j in range(len(matrix)):
-							if i in minimum_lines[0] and j in minimum_lines[1]:
-								matrix[i][j] += minimum
-							if i not in minimum_lines[0] and j not in minimum_lines[1]:
-								matrix[i][j] -= minimum
+							if row in minimum_lines[0] and j in minimum_lines[1]:
+								matrix[row][j] += minimum
+							if row not in minimum_lines[0] and j not in minimum_lines[1]:
+								matrix[row][j] -= minimum
 				else:
 					optimal_solution_found = True
 			if row_scan_result.count(-1) + column_scan_result.count(-1) == len(matrix):
@@ -266,18 +271,55 @@ def main():
 		zero_locations = []
 		available_columns_to_assign = []
 
-		for i, row in enumerate(matrix):
+		for row, row in enumerate(matrix):
 			zero_positions = []
 			for j, value in enumerate(row):
 				if value == 0:
 					zero_positions.append(j)
-					if j not in available_columns_to_assign:
+					if j not in available_columns_to_assign and j not in assignments:
 						available_columns_to_assign.append(j)
 			zero_locations.append(zero_positions)
-		
-		
 
 
+		while not sublists_empty(zero_locations):
+			column_count = []
+			for column in available_columns_to_assign:
+				count = 0
+				for locations in zero_locations:
+					if column in locations:
+						count += 1
+				column_count.append(count)
+
+			least_index = column_count.index(min(column_count))
+			column_to_assign = available_columns_to_assign[least_index]
+			
+			row_found = False
+			row = 0
+			while not row_found and row < len(matrix):
+				if column_to_assign in zero_locations[row]:
+					row_found = True
+				else:
+					row += 1
+			if row_found:
+				assignments[row] = column_to_assign
+				available_columns_to_assign.remove(column_to_assign)
+				zero_locations[row] = []
+			
+			
+		for i, assignment in enumerate(assignments):
+			if len(teachers_in_use) > i:
+				if len(subjects_in_use) > assignment:
+					FINAL_ASSIGNMENTS.append([teachers[teachers_in_use[i]][0], subjects[subjects_in_use[assignment]][0]])
+				else:
+					print("FAILED " + teachers[i][0])
+					teachers[teachers_in_use[i]][1] += 1
+			else:
+				print("FAILED " + subjects[assignment][0])
+				subjects[subjects_in_use[assignment]][1] += 1
+
+	for assignment in FINAL_ASSIGNMENTS:
+		print(assignment)
+		
 
 
 if __name__ == '__main__':
