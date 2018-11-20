@@ -311,10 +311,10 @@ def main():
 				if len(subjects_in_use) > assignment:
 					FINAL_ASSIGNMENTS.append([teachers[teachers_in_use[i]][0], subjects[subjects_in_use[assignment]][0]])
 				else:
-					print("FAILED " + teachers[i][0])
+					# print("FAILED " + teachers[i][0])
 					teachers[teachers_in_use[i]][1] += 1
 			else:
-				print("FAILED " + subjects[assignment][0])
+				# print("FAILED " + subjects[assignment][0])
 				subjects[subjects_in_use[assignment]][1] += 1
 
 	for assignment in FINAL_ASSIGNMENTS:
